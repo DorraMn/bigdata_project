@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Big Data Tools Control</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+   <div class="container">
+        <h1>Big Data Tools Control Panel</h1>
+
+        <div id="activeToolsList" class="active-tools">
+            <strong>Outils démarrés :</strong>
+            <ul id="runningList"></ul>
+        </div>
+        <hr />
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Statut</th>
+                    <th>Tool</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span id="status-spark" class="status-indicator red"></span></td>
+                    <td>Spark</td>
+                    <td>
+                        <button onclick="startTool('spark')">Start</button>
+                        <button onclick="stopTool('spark')">Stop</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td><span id="status-mongodb" class="status-indicator red"></span></td>
+                    <td>MongoDB</td>
+                    <td>
+                        <button onclick="startTool('mongodb')">Start</button>
+                        <button onclick="stopTool('mongodb')">Stop</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td><span id="status-hbase" class="status-indicator red"></span></td>
+                    <td>HBase</td>
+                    <td>
+                        <button onclick="startTool('hbase')">Start</button>
+                        <button onclick="stopTool('hbase')">Stop</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>📦 Tous les conteneurs Docker</h2>
+        <div id="allContainers"></div>
+        <hr />
+
+        <div id="output"></div>
+    </div>
+
+     <div id="output" style="margin-top: 20px; font-weight: bold;"></div>
+    </div>
+
+    <!-- Modal de personnalisation -->
+    <div id="customModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span id="closeModal" class="close">&times;</span>
+            <h2>Customize <span id="customToolName"></span> Container</h2>
+            <form onsubmit="event.preventDefault(); submitCustomization();">
+                <label>Container Name:<br><input type="text" id="container_name" required></label><br><br>
+                <label>Username:<br><input type="text" id="username" required></label><br><br>
+                <label>Password:<br><input type="password" id="password" required></label><br><br>
+                <label>Port:<br><input type="number" id="port" required></label><br><br>
+                <button type="submit">Customize & Start</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de configuration -->
+    <div id="configModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span id="closeConfigModal" class="close">&times;</span>
+            <h2>Configuration de l'outil</h2>
+            <div id="configDetails"></div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
