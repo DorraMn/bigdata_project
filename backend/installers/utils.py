@@ -1,6 +1,8 @@
 import platform
 import subprocess
 from typing import Tuple
+import shutil
+import logging
 
 def detect_os() -> str:
     system = platform.system().lower()
@@ -11,6 +13,15 @@ def detect_os() -> str:
     if 'windows' in system:
         return 'windows'
     return 'unknown'
+
+def get_docker_command() -> str:
+    """
+    Retourne le chemin complet vers la commande docker, ou lève une erreur si non trouvée.
+    """
+    docker_cmd = shutil.which("docker")
+    if docker_cmd is None:
+        raise RuntimeError("Docker n'est pas installé ou 'docker' n'est pas dans le PATH.")
+    return docker_cmd
 
 def run_command(cmd: str, logger: any) -> Tuple[int, str]:
     """
@@ -43,3 +54,17 @@ def run_command(cmd: str, logger: any) -> Tuple[int, str]:
         error_msg = f"Erreur lors de l'exécution de la commande : {e}"
         logger.exception(error_msg)
         return 1, error_msg
+
+def run_docker_command(args: str, logger: any) -> Tuple[int, str]:
+    """
+    Exécute une commande Docker en utilisant le chemin absolu de docker détecté.
+    'args' est la partie après 'docker', par exemple 'ps -a'.
+    """
+    try:
+        docker_cmd = get_docker_command()
+        full_cmd = f'"{docker_cmd}" {args}'
+        logger.debug(f"Exécution commande Docker : {full_cmd}")
+        return run_command(full_cmd, logger)
+    except Exception as e:
+        logger.error(f"Erreur exécution commande Docker : {e}")
+        return 1, str(e)

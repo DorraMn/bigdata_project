@@ -1,5 +1,5 @@
 from .base import BaseInstaller
-from .utils import run_command
+from .utils import run_command, run_docker_command
 import json
 import socket
 import re
@@ -30,7 +30,8 @@ def get_volume_path(container_name: str) -> str:
 class SparkInstaller(BaseInstaller):
 
     def check_prerequisites(self) -> None:
-        code, _ = run_command("docker --version", self.logger)
+        # Utiliser run_docker_command pour vérifier Docker
+        code, _ = run_docker_command("--version", self.logger)
         if code != 0:
             raise RuntimeError("Docker n'est pas installé ou disponible dans le PATH.")
         self.logger.info("Docker est installé.")
@@ -72,7 +73,7 @@ class SparkInstaller(BaseInstaller):
 
         self.logger.info("Lancement du conteneur Spark...")
         run_cmd_str = (
-            f"docker run -d "
+            f"run -d "
             f"--name {container_name} "
             f"--label myapp=mon_interface "
             f"--label created_by=mon_app "
@@ -84,7 +85,8 @@ class SparkInstaller(BaseInstaller):
             f"{image_name}"
         )
 
-        code, output = run_command(run_cmd_str, self.logger)
+        # Utiliser run_docker_command (le "docker" est ajouté automatiquement)
+        code, output = run_docker_command(run_cmd_str, self.logger)
         if code != 0:
             raise RuntimeError(f"Erreur lancement conteneur : {output}")
 
@@ -94,8 +96,8 @@ class SparkInstaller(BaseInstaller):
     def test_installation(self) -> bool:
         container_name = self.config.get("container_name", "spark_container")
         self.logger.info(f"Vérification du conteneur Spark : {container_name}")
-        code, output = run_command(
-            f'docker ps --filter "name={container_name}" --filter "status=running"',
+        code, output = run_docker_command(
+            f'ps --filter "name={container_name}" --filter "status=running"',
             self.logger
         )
         return code == 0 and container_name in output
@@ -103,12 +105,12 @@ class SparkInstaller(BaseInstaller):
     def rollback(self) -> None:
         container_name = self.config.get("container_name", "spark_container")
         self.logger.info(f"Rollback : suppression de {container_name}")
-        run_command(f"docker rm -f {container_name}", self.logger)
+        run_docker_command(f"rm -f {container_name}", self.logger)
 
     def wait_for_removal(self, container_name: str, timeout: int = 10):
         for _ in range(timeout * 2):
-            code, output = run_command(
-                f"docker ps -a --filter name={container_name} --format '{{{{.ID}}}}'", self.logger
+            code, output = run_docker_command(
+                f"ps -a --filter name={container_name} --format '{{{{.ID}}}}'", self.logger
             )
             if code == 0 and not output.strip():
                 return
@@ -118,8 +120,8 @@ class SparkInstaller(BaseInstaller):
     def wait_until_ready(self, container_name: str, timeout: int = 20):
         self.logger.info(f"Attente de l'état prêt de {container_name}...")
         for _ in range(timeout * 2):
-            code, _ = run_command(
-                f'docker exec {container_name} ls /opt/bitnami/spark', self.logger
+            code, _ = run_docker_command(
+                f"exec {container_name} ls /opt/bitnami/spark", self.logger
             )
             if code == 0:
                 return
@@ -130,12 +132,12 @@ class SparkInstaller(BaseInstaller):
         container_name = self.config.get("container_name", "spark_container")
 
         docker_cmd = (
-            f'docker exec {container_name} bash -c '
+            f'exec {container_name} bash -c '
             f'"HOME=/home/sparkuser /opt/bitnami/spark/bin/spark-submit /opt/bitnami/spark/get_spark_config.py"'
         )
 
         self.logger.info("Extraction configuration Spark...")
-        code, output = run_command(docker_cmd, self.logger)
+        code, output = run_docker_command(docker_cmd, self.logger)
         if code != 0:
             raise RuntimeError("Erreur lors de la récupération de la configuration.")
 
@@ -153,14 +155,14 @@ class SparkInstaller(BaseInstaller):
 
         self.logger.info("Redémarrage du conteneur Spark...")
 
-        run_command(f"docker stop {container_name}", self.logger)
-        run_command(f"docker rm {container_name}", self.logger)
+        run_docker_command(f"stop {container_name}", self.logger)
+        run_docker_command(f"rm {container_name}", self.logger)
         self.wait_for_removal(container_name)
 
         config_args = " ".join([f"{k}={v}" for k, v in new_config.items()])
 
         run_cmd_str = (
-            f'docker run -d '
+            f'run -d '
             f'--name {container_name} '
             f'--label myapp=mon_interface '
             f'-e HOME=/home/sparkuser '
@@ -171,7 +173,7 @@ class SparkInstaller(BaseInstaller):
             f'/opt/bitnami/spark/get_spark_config.py {config_args} && tail -f /dev/null"'
         )
 
-        code, output = run_command(run_cmd_str, self.logger)
+        code, output = run_docker_command(run_cmd_str, self.logger)
         if code != 0:
             raise RuntimeError("Redémarrage échoué : " + output)
 
