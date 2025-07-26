@@ -8,7 +8,6 @@ router = APIRouter()
 
 # ==================== CONFIGURATION ====================
 
-# Mapping outil -> classe d'installateur
 TOOLS = {
     "spark": "SparkInstaller",
     "mongodb": "MongoDBInstaller",
@@ -19,12 +18,10 @@ TOOLS = {
 logger = logging.getLogger("installer_logger")
 logging.basicConfig(level=logging.INFO)
 
-# Callback de progression
 def dummy_progress(p: int):
     logger.info(f"Progression : {p}%")
 
-
-# ==================== SCHÉMAS Pydantic ====================
+# ==================== SCHÉMAS ====================
 
 class ToolConfig(BaseModel):
     container_name: str
@@ -37,7 +34,6 @@ class ToolUpdateConfig(BaseModel):
     container_name: str
     port: int = Field(ge=1, le=65535)
     config: dict
-
 
 # ==================== ROUTES GÉNÉRIQUES ====================
 
@@ -105,7 +101,6 @@ def list_all_containers():
                 "status": c.status,
                 "image": image_tag,
                 "ports": c.attrs.get("NetworkSettings", {}).get("Ports", {}),
-                
             })
 
         return {"containers": result}
@@ -113,7 +108,6 @@ def list_all_containers():
     except Exception as e:
         logger.error(f"Erreur récupération des conteneurs Docker : {e}")
         raise HTTPException(status_code=500, detail="Impossible de récupérer les conteneurs Docker.")
-
 
 # ==================== SPARK ====================
 
@@ -152,7 +146,6 @@ def update_spark_config(update: ToolUpdateConfig):
         logger.error(f"Erreur mise à jour Spark : {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 # ==================== HBASE ====================
 
 @router.post("/tools/hbase/config")
@@ -189,3 +182,4 @@ def update_hbase_config(update: ToolUpdateConfig):
     except Exception as e:
         logger.error(f"Erreur mise à jour HBase : {e}")
         raise HTTPException(status_code=500, detail=str(e))
+# ==================== MONGODB ==================== 
