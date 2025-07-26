@@ -5,6 +5,7 @@ import socket
 import re
 import time
 import os
+import platform
 
 
 def extraire_json_sortie(stdout: str):
@@ -13,6 +14,17 @@ def extraire_json_sortie(stdout: str):
     if match:
         return json.loads(match.group())
     raise ValueError("Aucun bloc JSON valide trouvé dans la sortie.")
+
+
+def get_volume_path(container_name: str) -> str:
+    """Retourne un chemin de volume compatible multiplateforme pour Docker."""
+    base_dir = os.path.join(".", "data")
+    full_path = os.path.abspath(os.path.join(base_dir, container_name))
+    os.makedirs(full_path, exist_ok=True)
+
+    if platform.system() == "Windows":
+        return full_path.replace("\\", "/")  # Docker sur Windows attend des slashs POSIX
+    return full_path
 
 
 class SparkInstaller(BaseInstaller):
@@ -50,8 +62,7 @@ class SparkInstaller(BaseInstaller):
 
         image_name = "custom-spark-image"
         dockerfile_path = "./backend/docker/spark"
-        volume_path = os.path.abspath(f"./data/{container_name}")
-        os.makedirs(volume_path, exist_ok=True)
+        volume_path = get_volume_path(container_name)
 
         self.logger.info("Construction de l'image Docker Spark...")
         build_cmd = f"docker build -t {image_name} {dockerfile_path}"
@@ -64,7 +75,7 @@ class SparkInstaller(BaseInstaller):
             f"docker run -d "
             f"--name {container_name} "
             f"--label myapp=mon_interface "
-            f"--label created_by=mon_app " 
+            f"--label created_by=mon_app "
             f"-e SPARK_USER={username} "
             f"-e SPARK_PASSWORD={password} "
             f"-e HOME=/home/sparkuser "
@@ -72,7 +83,6 @@ class SparkInstaller(BaseInstaller):
             f"-v {volume_path}:/opt/bitnami/spark/workspace "
             f"{image_name}"
         )
-
 
         code, output = run_command(run_cmd_str, self.logger)
         if code != 0:
@@ -139,8 +149,7 @@ class SparkInstaller(BaseInstaller):
         container_name = self.config.get("container_name", "spark_container")
         port = self.config.get("port", 8080)
         image_name = "custom-spark-image"
-        volume_path = os.path.abspath(f"./data/{container_name}")
-        os.makedirs(volume_path, exist_ok=True)
+        volume_path = get_volume_path(container_name)
 
         self.logger.info("Redémarrage du conteneur Spark...")
 
