@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   bigdata_app:
     build: .
@@ -7,6 +6,7 @@ services:
     volumes:
       - ./backend:/app/backend
       - ./frontend:/app/frontend
+      - /var/run/docker.sock:/var/run/docker.sock  # 👈 Monte la socket Docker
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped

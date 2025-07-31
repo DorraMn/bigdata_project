@@ -1,8 +1,12 @@
-# Use an official Python image
 FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
+
+# Installer docker CLI
+RUN apt-get update && \
+    apt-get install -y docker.io curl && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Copy backend code
 COPY backend/ /app/backend/
@@ -14,11 +18,11 @@ RUN pip install --upgrade pip && \
 # Expose FastAPI port
 EXPOSE 8000
 
-# Copy frontend (for static serving or development)
+# Copy frontend (optional)
 COPY frontend/ /app/frontend/
 
-# Optionally install a simple web server for static files
+# Install FastAPI and Uvicorn
 RUN pip install fastapi[all] && pip install uvicorn
 
-# Start FastAPI backend
+# Run FastAPI app
 CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
