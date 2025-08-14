@@ -1,6 +1,8 @@
 from .base import BaseInstaller
 from .utils import run_command
 import time
+import os
+import json
 
 class MongoDBInstaller(BaseInstaller):
 
@@ -20,14 +22,12 @@ class MongoDBInstaller(BaseInstaller):
 
         self.logger.info(f"Lancement de MongoDB avec : container={container}, port={port}, user={username}, volume={volume or 'non spécifié'}")
 
-        # Pull de l’image MongoDB
         code, output = run_command("docker pull mongo", self.logger)
         if code != 0:
             self.logger.error(f"Échec du téléchargement de l’image MongoDB : {output}")
             raise RuntimeError("Échec du téléchargement de l’image MongoDB.")
         self.progress(40)
 
-        # Construction de la commande Docker
         docker_cmd = (
             f"docker run -d --name {container} "
             f"-p {port}:27017 "
@@ -42,7 +42,6 @@ class MongoDBInstaller(BaseInstaller):
 
         self.logger.info(f"Commande Docker : {docker_cmd}")
 
-        # Lancement du conteneur
         code, output = run_command(docker_cmd, self.logger)
         if code != 0:
             self.logger.error(f"Erreur au démarrage de MongoDB : {output}")
@@ -73,3 +72,23 @@ class MongoDBInstaller(BaseInstaller):
         self.logger.info(f"Rollback en cours pour le conteneur MongoDB : {container}")
         run_command(f"docker rm -f {container}", self.logger)
         self.logger.info(f"Rollback MongoDB terminé pour {container}.")
+
+    def update_config(self, new_config: dict) -> dict:
+        """
+        Met à jour la configuration MongoDB et redémarre le conteneur
+        """
+        container = new_config.get("container_name", self.config.get("container_name", "mongodb_docker"))
+
+        self.logger.info(f"Mise à jour de la configuration MongoDB pour {container}...")
+        self.logger.debug(f"Nouvelle configuration : {json.dumps(new_config, indent=2)}")
+
+        # Arrêter et supprimer le conteneur existant
+        run_command(f"docker rm -f {container}", self.logger)
+
+        # Mettre à jour la config interne de l'instance
+        self.config.update(new_config)
+
+        # Relancer avec la nouvelle config
+        self.install()
+
+        return {"status": "ok", "message": f"MongoDB redémarré avec la nouvelle configuration pour {container}"}
